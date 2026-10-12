@@ -64,7 +64,7 @@ footer{text-align:center;color:var(--mu);font-size:.75rem;padding:0 20px 40px}
 <div class="hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
 <section class="step on" data-s="0">
-<div class="sl">Step 1 of 5</div><h2>Before you begin</h2><p class="desc">Enter the access code shared by the UED Team and your UCL email address. Only students on the London Project class list can take part.</p>
+<div class="sl">Step 1 of 5</div><h2>Before you begin</h2><p class="desc">Enter the access code shared by the UED Team and your UCL email address. On the next page you will select your name from the class list.</p>
 <div class="info p">Agree your pair first. You and your partner each submit your own form and choose each other, and the team will see the pair as confirmed once both forms are in.</div>
 <div class="q"><label class="t" for="code">Access code <span class="req">*</span></label><input type="password" id="code" maxlength="60" autocomplete="off"></div>
 <div class="q"><label class="t" for="email">UCL email address <span class="req">*</span></label><input type="email" id="email" maxlength="120" placeholder="firstname.surname.26@ucl.ac.uk" autocomplete="email"></div>
@@ -118,7 +118,7 @@ footer{text-align:center;color:var(--mu);font-size:.75rem;padding:0 20px 40px}
 <script>
 (function(){
 'use strict';
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWn6pyJ4D1vAIxLtlkKnrf2k_TTOdLSy_JI8ipa_5TaDLFfmeLJvQn9D_PUmvkqBIbiQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyA_cv_2wMaqhAr0zv8EWJEKERLsTrGNhc-v3v6H-uBsVqumpkn6FGwUsyoUwEPptmk_Q/exec';
 var SKILLS = ['Project Management','Oral Presentations','Graphic Design','Qualitative Research','Quantitative Research','Critical Literature Review','Report Writing'];
 var NO_PARTNER = 'NONE';
 var $ = function(id){ return document.getElementById(id); };
@@ -181,9 +181,7 @@ $('start').onclick = function(){
       if (!res.ok) throw new Error(res.error || 'error');
       students = res.students || [];
       var ns = $('name'); ns.length = 1;
-      (res.choices || []).forEach(function(n){ var o = document.createElement('option'); o.value = n; o.textContent = n; ns.appendChild(o); });
-      if (res.me){ ns.value = res.me; $('namehint').textContent = 'We found you on the class list from your email.'; }
-      else $('namehint').textContent = 'Your email is not yet on the class list, so please select your name below.';
+      students.forEach(function(s){ var o = document.createElement('option'); o.value = s.name; o.textContent = s.name; ns.appendChild(o); });
       fillPartners();
       show(1);
     })
