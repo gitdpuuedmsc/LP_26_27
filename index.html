@@ -74,7 +74,7 @@ footer{text-align:center;color:var(--mu);font-size:.75rem;padding:0 20px 40px}
 
 <section class="step" data-s="1">
 <div class="sl">Step 2 of 5 · Section 1</div><h2>Your name and skills</h2><p class="desc">Tell us who you are and where your strengths lie.</p>
-<div class="q"><label class="t" for="name"><span class="n">1.</span>Name <span class="req">*</span></label><input type="text" id="name" maxlength="100"></div>
+<div class="q"><label class="t" for="name"><span class="n">1.</span>Name <span class="req">*</span></label><p class="hint" id="namehint">Select your name from the class list.</p><select id="name"><option value="">Choose your name</option></select></div>
 <div class="q"><label class="t"><span class="n">2.</span>Please rank your skills from these areas below <span class="req">*</span></label><p class="hint">Drag the cards, or use the arrows, so that your strongest skill sits at the top.</p><ol class="rank" id="rank"></ol><div class="ends"><span>Strongest</span><span>Least strong</span></div></div>
 <div class="q"><label class="t" for="other"><span class="n">3.</span>List ONE other skill that's not listed above <span class="req">*</span></label><input type="text" id="other" maxlength="150"></div>
 <div class="q"><label class="t" for="gis"><span class="n">4.</span>Are you familiar with using GIS? (Geographical Information Systems) <span class="req">*</span></label><input type="text" id="gis" maxlength="200" placeholder="For example, yes with QGIS, or not yet"></div>
@@ -118,7 +118,7 @@ footer{text-align:center;color:var(--mu);font-size:.75rem;padding:0 20px 40px}
 <script>
 (function(){
 'use strict';
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLRoJtNYMbYMWMoCLNlMUmpXvxRALcAwP9_gmbsWvxKn63kKq3oTgptjgSjHJybydNLw/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWn6pyJ4D1vAIxLtlkKnrf2k_TTOdLSy_JI8ipa_5TaDLFfmeLJvQn9D_PUmvkqBIbiQ/exec';
 var SKILLS = ['Project Management','Oral Presentations','Graphic Design','Qualitative Research','Quantitative Research','Critical Literature Review','Report Writing'];
 var NO_PARTNER = 'NONE';
 var $ = function(id){ return document.getElementById(id); };
@@ -176,22 +176,31 @@ $('start').onclick = function(){
   if (!code) return err(0, 'Please enter the access code.');
   if (!/^[^\s@]+@ucl\.ac\.uk$/.test(email)) return err(0, 'Please enter your UCL email address, ending in @ucl.ac.uk.');
   var b = this; b.disabled = true; b.textContent = 'Checking';
-  call({ action: 'roster', code: code, website: document.querySelector('[name=website]').value })
+  call({ action: 'roster', code: code, email: email, website: document.querySelector('[name=website]').value })
     .then(function(res){
       if (!res.ok) throw new Error(res.error || 'error');
       students = res.students || [];
-      var sel = $('partner'); sel.length = 1;
-      students.forEach(function(s){ var o = document.createElement('option'); o.value = s.name; o.textContent = s.name + (s.paired ? ' (already in a confirmed pair)' : ''); sel.appendChild(o); });
-      var o = document.createElement('option'); o.value = NO_PARTNER; o.textContent = 'I do not have a partner yet, please pair me'; sel.appendChild(o);
+      var ns = $('name'); ns.length = 1;
+      (res.choices || []).forEach(function(n){ var o = document.createElement('option'); o.value = n; o.textContent = n; ns.appendChild(o); });
+      if (res.me){ ns.value = res.me; $('namehint').textContent = 'We found you on the class list from your email.'; }
+      else $('namehint').textContent = 'Your email is not yet on the class list, so please select your name below.';
+      fillPartners();
       show(1);
     })
     .catch(function(e){ err(0, e.message === 'network' || e.message === 'Failed to fetch' ? 'We could not reach the form server. Please check your connection and try again.' : e.message); })
     .finally(function(){ b.disabled = false; b.textContent = 'Continue'; });
 };
 
+function fillPartners(){
+  var me = $('name').value, sel = $('partner'), keep = sel.value; sel.length = 1;
+  students.forEach(function(s){ if (s.name === me) return; var o = document.createElement('option'); o.value = s.name; o.textContent = s.name + (s.paired ? ' (already in a confirmed pair)' : ''); sel.appendChild(o); });
+  var o = document.createElement('option'); o.value = NO_PARTNER; o.textContent = 'I do not have a partner yet, please pair me'; sel.appendChild(o);
+  if (keep && keep !== me) sel.value = keep;
+}
+$('name').onchange = fillPartners;
 function val(name){ var c = document.querySelector('input[name=' + name + ']:checked'); return c ? c.value : ''; }
 var checks = {
-  1: function(){ if (!$('name').value.trim()) return 'Please enter your name.'; if (!$('other').value.trim()) return 'Please list one other skill.'; if (!$('gis').value.trim()) return 'Please tell us about your familiarity with GIS.'; },
+  1: function(){ if (!$('name').value) return 'Please select your name from the list.'; if (!$('other').value.trim()) return 'Please list one other skill.'; if (!$('gis').value.trim()) return 'Please tell us about your familiarity with GIS.'; },
   2: function(){ if (!$('work').value.trim()) return 'Please describe your most relevant work experience, or write none.'; if (!val('emp')) return 'Please indicate your current employment.'; if (!$('deg').value.trim()) return 'Please list your degrees and subject areas.'; if (!val('nat')) return 'Please tell us whether you are a native English speaker.'; },
   3: function(){ if (!$('partner').value) return 'Please choose your partner, or ask us to pair you.'; }
 };
@@ -205,7 +214,7 @@ $('partner').onchange = function(){
 
 function data(){
   return { action: 'submit', code: code, email: email, website: document.querySelector('[name=website]').value,
-    name: $('name').value.trim(), ranking: order(), otherSkill: $('other').value.trim(), gis: $('gis').value.trim(),
+    name: $('name').value, self: $('name').value, ranking: order(), otherSkill: $('other').value.trim(), gis: $('gis').value.trim(),
     work: $('work').value.trim(), employment: val('emp'), degrees: $('deg').value.trim(), native: val('nat'), partner: $('partner').value };
 }
 function rows(d){
